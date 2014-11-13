@@ -28,7 +28,42 @@ def mdrend(raw):
 
 
 
+def path2list(p):
+	l = []
+	
+	for i in range(5):
+		p,t = os.path.split(p)
+		if not t:
+			break
+		if t == '.':
+			break
+		l.insert(0,t)
+		#print p,t
+		
+	return l
 
+def getbranch(d, l):
+	
+	while l:
+		a = l.pop(0)
+		try:
+			d = d[a]
+		except:
+			d[a] = {}
+			d = d[a]
+	
+	return d
+
+def htmllist(d):
+	
+	print "<ul>\n"
+	for k,v in d.items():
+		print "<li>{}</li>".format(k)
+		if v:
+			htmllist(v)
+			
+	print "</ul>\n"
+	
 
 class Form(object):
 	def __init__(self, dir_pre):
@@ -39,10 +74,18 @@ class Form(object):
 
 		#print self.form.list
 
-		with open(os.path.join(dir_lib, 'form_go.html')) as f:
-			self.html_form_go = f.read()
+		self.forms = {}
+		
+		self.topbar = "<h1>"+dir_pre+"</h1>"
 
-		with open(os.path.join(dir_lib, 'wiki_temp.html')) as f:
+		with open(os.path.join(dir_lib, 'templates/forms/go.html')) as f:
+			self.html_form_go = f.read()
+		with open(os.path.join(dir_lib, 'templates/forms/tree.html')) as f:
+			self.html_form_tree = f.read()
+		with open(os.path.join(dir_lib, 'templates/forms/textarea.html')) as f:
+			self.forms["textarea"] = f.read()
+
+		with open(os.path.join(dir_lib, 'templates/page.html')) as f:
 			self.temp = jinja2.Template(f.read())
 
 		self.data = {}
@@ -63,9 +106,19 @@ class Form(object):
 		return val
 
 	def homepage(self):
-		print head1
-		print "home page\n"
-		print self.html_form_go
+		#print head1
+		#print "home page\n"
+		
+		#print self.html_form_tree
+		#print self.html_form_go
+
+		htmltext = self.temp.render(
+			head = head1,
+			topbar = self.topbar,
+			body = self.html_form_tree + self.html_form_go)
+		
+		print htmltext
+	
 
 	def page_edit(self, page, raw_file):
 
@@ -91,11 +144,22 @@ class Form(object):
 
 		
 		html_form = mdrend(raw_form)
-	
+
+
+		# jinja
+		
+		body = "<div>"+topmatter+"</div><div>"+html_form+"</div>"
+		body += self.forms["textarea"]
+		
+		body = jinja2.Template(body).render(text_form = raw_form)
+		
 		htmltext = self.temp.render(
 			head=head1,
-			topmatter=topmatter, text_form=raw_form, text=html_form, page=page, mode="edit")
-	
+			topbar = self.topbar,
+			body=body,
+			page=page,
+			mode="edit")
+		
 		print htmltext
 
 	def page_new(self, page):
@@ -112,6 +176,8 @@ class Form(object):
 			raw_form = ""
 		
 		
+		body = "<div>{{ topmatter }}</div><div>{{ text }}</div>"
+		body += self.forms["textarea"]
 		
 		
 		htmltext = self.temp.render(
@@ -124,6 +190,34 @@ class Form(object):
 			)
 	
 		print htmltext
+
+
+	def page_tree(self):
+		
+		d = {}
+		
+		for root, dirs, files in os.walk(self.dir_pre):
+			if not '.git' in root:
+				root = os.path.relpath(root, self.dir_pre)
+				
+				#print 'root',root,"</br>"
+				
+				l = path2list(root)
+				#print l, "</br>"
+				
+				b = getbranch(d, l)
+				#print b, "</br>"
+
+				for f in files:
+					#f = os.path.join(root,f)
+					#print root, f, "</br>"
+
+					b[f] = None
+				
+
+		#print d, "</br>"
+
+		htmllist(d)
 
 	def readfile(self, page):
 
@@ -166,7 +260,7 @@ def run(dir_pre):
 
 
 	raw_file = form.readfile(page)
-	print "raw_file =",raw_file,"</br>"
+	#print "raw_file =",raw_file,"</br>"
 
 
 	# page rendering
@@ -192,6 +286,8 @@ def run(dir_pre):
 			form.page_edit(page, raw_file)
 		else:
 			print "error"
+	elif submit=="tree":
+		form.page_tree()
 	else:
 		form.homepage()
 	
@@ -204,6 +300,9 @@ def run(dir_pre):
 		text_form_html = ""
 	else:
 		text_form_html = mdrend(text_form)
+
+
+
 	
 	htmltext = temp.render(text_form=text_form, text=text_form_html, page=page)
 

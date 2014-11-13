@@ -112,6 +112,8 @@ class Form(object):
 		#print self.html_form_tree
 		#print self.html_form_go
 
+		print head1
+
 		htmltext = self.temp.render(
 			head = head1,
 			topbar = self.topbar,
@@ -147,11 +149,13 @@ class Form(object):
 
 
 		# jinja
+
+		var = {"topbar":self.topbar, "page":page, "mode":mode, "text_form":raw_form}
 		
 		body = "<div>"+topmatter+"</div><div>"+html_form+"</div>"
 		body += self.forms["textarea"]
 		
-		body = jinja2.Template(body).render(text_form = raw_form)
+		body = jinja2.Template(body).render(var)
 		
 		htmltext = self.temp.render(
 			head=head1,
@@ -175,19 +179,20 @@ class Form(object):
 			html_form = ""
 			raw_form = ""
 		
+
+		# jinja
 		
-		body = "<div>{{ topmatter }}</div><div>{{ text }}</div>"
+		var = {"topbar":self.topbar, "page":page, "mode":"new", "text_form":raw_form}
+		
+		body = "<div>" + topmatter + "</div><div>" + html_form + "</div>"
 		body += self.forms["textarea"]
+	
+		body = jinja2.Template(body).render(var)
 		
+		var["head"] = head1
+		var["body"] = body
 		
-		htmltext = self.temp.render(
-			head = head1,
-			topmatter = topmatter,
-			text_form = raw_form,
-			text = html_form,
-			page = page,
-			mode = "new"
-			)
+		htmltext = self.temp.render(var)
 	
 		print htmltext
 
@@ -254,7 +259,13 @@ def run(dir_pre):
 	# data entry
 
 	if submit=="save" and page and raw:
-		with open(dir_pre + page + ".md", 'w') as f:
+		
+		p = os.path.join(dir_pre + page)
+		d,_ = os.path.split(p)
+
+		os.makedirs(d)
+
+		with open(p + ".md", 'w') as f:
 			f.write(raw)
 	
 
@@ -290,23 +301,7 @@ def run(dir_pre):
 		form.page_tree()
 	else:
 		form.homepage()
+
 	
 	return
-	
-	try:
-		text_form = form["text"].value
-	except:
-		text_form = ""
-		text_form_html = ""
-	else:
-		text_form_html = mdrend(text_form)
-
-
-
-	
-	htmltext = temp.render(text_form=text_form, text=text_form_html, page=page)
-
-	print htmltext
-
-
 

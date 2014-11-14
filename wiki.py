@@ -150,7 +150,7 @@ class Form(object):
 
 		# jinja
 
-		var = {"topbar":self.topbar, "page":page, "mode":mode, "text_form":raw_form}
+		var = {"topbar":self.topbar, "page":page, "mode":"edit", "text_form":raw_form}
 		
 		body = "<div>"+topmatter+"</div><div>"+html_form+"</div>"
 		body += self.forms["textarea"]
@@ -263,7 +263,10 @@ def run(dir_pre):
 		p = os.path.join(dir_pre + page)
 		d,_ = os.path.split(p)
 
-		os.makedirs(d)
+		try:
+			os.makedirs(d)
+		except:
+			pass
 
 		with open(p + ".md", 'w') as f:
 			f.write(raw)

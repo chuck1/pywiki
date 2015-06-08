@@ -9,7 +9,6 @@ import cgi
 import jinja2
 import markdown
 
-
 # modes:
 #     new page creation: 'page' set but not file exists
 #     page edit
@@ -26,8 +25,6 @@ head1 = "<link href=\"http://127.0.0.1/style.css\" rel=\"stylesheet\"></link>"
 def mdrend(raw):
 	return markdown.markdown(raw, extensions=['extra', 'tables'])
 
-
-
 def path2list(p):
 	l = []
 	
@@ -43,7 +40,6 @@ def path2list(p):
 	return l
 
 def getbranch(d, l):
-	
 	while l:
 		a = l.pop(0)
 		try:
@@ -55,7 +51,6 @@ def getbranch(d, l):
 	return d
 
 def htmllist(d):
-	
 	print "<ul>\n"
 	for k,v in d.items():
 		print "<li>{}</li>".format(k)
@@ -63,7 +58,6 @@ def htmllist(d):
 			htmllist(v)
 			
 	print "</ul>\n"
-	
 
 class Form(object):
 	def __init__(self, dir_pre):
@@ -112,18 +106,16 @@ class Form(object):
 		#print self.html_form_tree
 		#print self.html_form_go
 
-		print head1
+		#print "\t"+head1
 
 		htmltext = self.temp.render(
-			head = head1,
+			head = [head1],
 			topbar = self.topbar,
 			body = self.html_form_tree + self.html_form_go)
 		
-		print htmltext
+		return htmltext
 	
-
 	def page_edit(self, page, raw_file):
-
 
 		topmatter = self.html_form_go
 		topmatter += "<h1>" + page + "</h1>\n"
@@ -144,9 +136,7 @@ class Form(object):
 			else:
 				print "error!"
 
-		
 		html_form = mdrend(raw_form)
-
 
 		# jinja
 
@@ -164,7 +154,7 @@ class Form(object):
 			page=page,
 			mode="edit")
 		
-		print htmltext
+		return htmltext
 
 	def page_new(self, page):
 		topmatter = self.html_form_go
@@ -172,14 +162,12 @@ class Form(object):
 	
 		raw_form = self.data["raw"]
 
-	
 		if raw_form:
 			html_form = mdrend(raw_form)
 		else:
 			html_form = ""
 			raw_form = ""
 		
-
 		# jinja
 		
 		var = {"topbar":self.topbar, "page":page, "mode":"new", "text_form":raw_form}
@@ -194,8 +182,7 @@ class Form(object):
 		
 		htmltext = self.temp.render(var)
 	
-		print htmltext
-
+		return htmltext
 
 	def page_tree(self):
 		
@@ -219,7 +206,6 @@ class Form(object):
 
 					b[f] = None
 				
-
 		#print d, "</br>"
 
 		htmllist(d)
@@ -241,11 +227,13 @@ class Form(object):
 		
 		return raw_file
 
-def run(dir_pre):
+def run1(dir_pre):
+        
+        text = ""
 
-	print "Content-Type: text/html;charset=utf-8"
-	print "Cache-Control: max-age=0, no-cache, no-store"
-	print "expires: 0\n"
+	text += "Content-Type: text/html;charset=utf-8\n"
+	text += "Cache-Control: max-age=0, no-cache, no-store\n"
+	text += "expires: 0\n"
 
 	form = Form(dir_pre)
 	
@@ -254,7 +242,6 @@ def run(dir_pre):
 	page = form.data["page"]
 	mode = form.data["mode"]
 	raw = form.data["raw"]
-
 
 	# data entry
 
@@ -271,40 +258,42 @@ def run(dir_pre):
 		with open(p + ".md", 'w') as f:
 			f.write(raw)
 	
-
-
 	raw_file = form.readfile(page)
 	#print "raw_file =",raw_file,"</br>"
 
-
 	# page rendering
-
-
 
 	# name of the button pressed
 	
 	if submit=="save":
-		form.page_edit(page, raw_file)
+		text += form.page_edit(page, raw_file)
 	elif submit=="go":
 		if page:
 			if raw_file:
-				form.page_edit(page, raw_file)
+				text += form.page_edit(page, raw_file)
 			else:
-				form.page_new(page)
+				text += form.page_new(page)
 		else:
-			form.homepage()
+			text += form.homepage()
 	elif submit=="preview":
 		if mode=="new":
-			form.page_new(page)
+			text += form.page_new(page)
 		elif mode=="edit":
-			form.page_edit(page, raw_file)
+			text += form.page_edit(page, raw_file)
 		else:
-			print "error"
+			text += "error"
 	elif submit=="tree":
-		form.page_tree()
+		text += form.page_tree()
 	else:
-		form.homepage()
+		text += form.homepage()
 
-	
-	return
+        return text
+
+def run(dir_pre):
+    print run1(dir_pre)
+
+if __name__ == '__main__':
+    print run1('.')
+
+
 
